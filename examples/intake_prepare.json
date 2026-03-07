@@ -1,0 +1,12 @@
+{
+  "files": [
+    "/path/A-01.pdf",
+    "/path/S-01.dwg"
+  ],
+  "project": {
+    "units": "metric",
+    "floor_heights_m": {
+      "GF": 3.2
+    }
+  }
+}

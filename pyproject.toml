@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "universal-qs-engine"
+version = "0.1.0"
+description = "Universal QS Engine scaffold for 0luka core integration"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Codex" }
+]
+dependencies = []
+
+[project.optional-dependencies]
+low_cost = [
+  "ezdxf>=1.3.2",
+  "pdfplumber>=0.11.0",
+  "pypdf>=4.2.0",
+  "pytesseract>=0.3.10",
+  "Pillow>=10.2.0",
+  "openpyxl>=3.1.2",
+]
+
+[project.scripts]
+uqs = "universal_qs_engine.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

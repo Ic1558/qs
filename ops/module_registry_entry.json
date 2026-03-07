@@ -1,0 +1,7 @@
+{
+  "label": "com.0luka.universal-qs-api",
+  "description": "Universal QS Engine health/API owner",
+  "port": 7084,
+  "health_url": "http://127.0.0.1:7084/api/health",
+  "state": "candidate"
+}

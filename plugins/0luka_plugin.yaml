@@ -1,0 +1,27 @@
+version: "1.0"
+kind: "plugin_manifest"
+
+plugin:
+  name: "module.execution.universal_qs_engine"
+  description: "Universal QS Engine integration surface for PDF/DWG takeoff preview, BOQ planning, and audit-ready export."
+  version: "0.1.0"
+
+actor:
+  id: "module.execution.mcp"
+  can_propose: true
+  can_execute: true
+
+capabilities_requested:
+  filesystem:
+    read: true
+    write: true
+    delete: false
+  process:
+    spawn: false
+    kill: false
+  network:
+    outbound: false
+
+components:
+  executor_entrypoint: "src/universal_qs_engine/cli.py"
+  default_gates: ["gate.fs.purity", "gate.hash.match", "gate.proc.clean"]

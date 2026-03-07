@@ -1,0 +1,35 @@
+{
+  "job_id": "qs-demo-001",
+  "sources": [
+    {
+      "path": "samples/architectural_plan.pdf",
+      "format": "pdf",
+      "discipline": "architecture",
+      "vector_pdf": false
+    },
+    {
+      "path": "samples/structure_frame.dwg",
+      "format": "dwg",
+      "discipline": "structure"
+    },
+    {
+      "path": "samples/mep_level_01.dxf",
+      "format": "dxf",
+      "discipline": "mep"
+    }
+  ],
+  "config": {
+    "project_name": "Demo Government Complex",
+    "unit_system": "metric",
+    "floor_to_floor_height_m": 3.4,
+    "pdf_scale_ratio": null,
+    "waste_factors": {
+      "architecture": 0.05,
+      "structure": 0.03,
+      "mep": 0.07
+    },
+    "vat_enabled": true,
+    "factor_f_enabled": true,
+    "factor_f_table": "thai-gov-v1"
+  }
+}

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal QS Engine</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-inter antialiased selection:bg-indigo-500/30">
+    
+    <!-- Background Decorators -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[120px] rounded-full mix-blend-screen"></div>
+        <div class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 blur-[120px] rounded-full mix-blend-screen"></div>
+    </div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-4 py-8 h-full flex flex-col gap-6">
+        
+        <!-- Header -->
+        <header class="flex items-center justify-between glass-panel p-4 rounded-2xl shadow-xl border border-white/5">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+                <div>
+                    <h1 class="font-outfit text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Universal QS Engine</h1>
+                    <p class="text-xs text-slate-400 font-medium tracking-wide">LOW-COST MODE ENABLED</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <div class="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-xs font-semibold text-emerald-400 tracking-wide" id="global-status">SYSTEM READY</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Layout -->
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+            
+            <!-- Sidebar: Config & Flow -->
+            <aside class="lg:col-span-4 flex flex-col gap-4">
+                
+                <!-- Setup Panel -->
+                <div class="glass-panel p-5 rounded-2xl border border-white/5 shadow-xl transition-all" id="panel-setup">
+                    <h2 class="font-outfit text-lg font-semibold text-white mb-4">Project Settings</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-slate-400 font-medium mb-1.5">Default Floor Height (m)</label>
+                            <input type="number" id="cfg-height" value="3.2" step="0.1" class="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm text-slate-400 font-medium mb-1.5">Factor F Mode</label>
+                            <select id="cfg-factorf" class="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors">
+                                <option value="auto">Auto-Calculate (Building)</option>
+                                <option value="manual_1.0">Fixed (1.000)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-900/40 border border-slate-800">
+                            <div>
+                                <span class="block text-sm font-medium text-slate-300">Heavy Vision ML</span>
+                                <span class="block text-xs text-slate-500">Enable deep pattern recognition</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="cfg-vision" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow Steps -->
+                <div class="glass-panel p-5 rounded-2xl border border-white/5 shadow-xl flex-1">
+                    <h2 class="font-outfit text-lg font-semibold text-white mb-4">Pipeline Status</h2>
+                    <div class="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-indigo-500/20 before:to-transparent">
+                        
+                        <!-- Track Intakes -->
+                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active" id="step-1">
+                            <div class="flex items-center justify-center w-5 h-5 rounded-full border-2 border-slate-700 bg-slate-900 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 indicator transition-colors z-10"></div>
+                            <div class="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] px-2">
+                                <h3 class="font-medium text-sm text-slate-300 tracking-wide title transition-colors">1. Intake & Geometry</h3>
+                            </div>
+                        </div>
+                        
+                        <!-- Logic -->
+                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group" id="step-2">
+                            <div class="flex items-center justify-center w-5 h-5 rounded-full border-2 border-slate-700 bg-slate-900 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 indicator transition-colors z-10"></div>
+                            <div class="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] px-2">
+                                <h3 class="font-medium text-sm text-slate-500 tracking-wide title transition-colors">2. Architecture & MEP</h3>
+                            </div>
+                        </div>
+                        
+                        <!-- Review -->
+                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group" id="step-3">
+                            <div class="flex items-center justify-center w-5 h-5 rounded-full border-2 border-slate-700 bg-slate-900 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 indicator transition-colors z-10"></div>
+                            <div class="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] px-2">
+                                <h3 class="font-medium text-sm text-slate-500 tracking-wide title transition-colors">3. Manual Review</h3>
+                            </div>
+                        </div>
+                        
+                        <!-- BOQ Export -->
+                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group" id="step-4">
+                            <div class="flex items-center justify-center w-5 h-5 rounded-full border-2 border-slate-700 bg-slate-900 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 indicator transition-colors z-10"></div>
+                            <div class="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] px-2">
+                                <h3 class="font-medium text-sm text-slate-500 tracking-wide title transition-colors">4. PO-5/PO-6 Export</h3>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </aside>
+
+            <!-- Main Workspace -->
+            <section class="lg:col-span-8 flex flex-col gap-4 relative">
+
+                <!-- Stage 1: Upload -->
+                <div id="stage-upload" class="stage-view active-stage absolute inset-0 glass-panel border border-white/5 rounded-2xl p-8 flex flex-col items-center justify-center shadow-xl text-center">
+                    
+                    <div id="drop-zone" class="w-full max-w-lg p-10 border-2 border-dashed border-slate-600/50 hover:border-indigo-500 hover:bg-indigo-500/5 rounded-2xl transition-all cursor-pointer group">
+                        <div class="w-20 h-20 mx-auto bg-slate-800/80 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
+                            <svg class="w-10 h-10 text-slate-400 group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2 text-white">Upload Blueprints</h3>
+                        <p class="text-slate-400 text-sm">Drop DWG, DXF, or PDF files here</p>
+                        <p class="text-slate-500 text-xs mt-4">Vector PDFs and CAD preferred for cost-efficiency</p>
+                        <input type="file" id="file-upload" multiple class="hidden" accept=".pdf,.dwg,.dxf">
+                    </div>
+
+                    <div id="upload-list" class="mt-6 w-full max-w-lg hidden space-y-2 text-left">
+                        <!-- List populated via JS -->
+                    </div>
+
+                    <button id="btn-start" class="mt-8 px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition-all opacity-0 pointer-events-none translate-y-4">
+                        Extract & Process
+                    </button>
+                </div>
+
+                <!-- Stage 2: Processing / Console -->
+                <div id="stage-processing" class="stage-view absolute inset-0 glass-panel border border-white/5 rounded-2xl p-6 shadow-xl flex flex-col overflow-hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-outfit text-xl font-semibold text-white">Optimization Engine</h2>
+                        <div class="px-2.5 py-1 bg-indigo-500/20 text-indigo-400 rounded-md text-xs font-mono tracking-widest animate-pulse border border-indigo-500/20">RUNNING</div>
+                    </div>
+                    
+                    <div id="console-output" class="flex-1 bg-[#0d1117] rounded-xl border border-slate-800 p-4 font-mono text-sm overflow-y-auto space-y-2 text-slate-400">
+                        <!-- Console lines -->
+                        <div class="text-emerald-400">>> Booting Universal QS Engine...</div>
+                    </div>
+                </div>
+
+                <!-- Stage 3: Review -->
+                <div id="stage-review" class="stage-view absolute inset-0 glass-panel border border-orange-500/30 rounded-2xl p-6 shadow-xl flex flex-col hidden bg-gradient-to-b from-orange-500/5 to-transparent">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="p-2 bg-orange-500/20 rounded-lg">
+                            <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        </div>
+                        <h2 class="font-outfit text-xl font-semibold text-white">Manual Review Required</h2>
+                    </div>
+
+                    <div id="review-items" class="flex-1 overflow-y-auto space-y-3">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button id="btn-resolve" class="px-6 py-2.5 bg-orange-500 hover:bg-orange-400 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 transition-colors">
+                            Acknowledge & Continue
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stage 4: Output -->
+                <div id="stage-output" class="stage-view absolute inset-0 glass-panel border border-emerald-500/30 rounded-2xl p-8 flex flex-col items-center justify-center shadow-xl text-center hidden bg-gradient-to-b from-emerald-500/5 to-transparent">
+                    <div class="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 ring-4 ring-emerald-500/10">
+                        <svg class="w-12 h-12 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-outfit font-bold text-white mb-2">BOQ Generated</h2>
+                    <p class="text-slate-400 mb-8 max-w-md">Quantities successfully extracted, mapped to Factor F, and reconciled into standard government formats.</p>
+
+                    <div class="grid grid-cols-2 gap-4 w-full max-w-md">
+                        <button id="btn-download-xlsx" class="flex flex-col items-center justify-center p-6 bg-slate-800/50 hover:bg-emerald-500/10 border border-slate-700 hover:border-emerald-500/50 rounded-xl transition-all group">
+                            <svg class="w-8 h-8 text-emerald-500 mb-2 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="font-semibold text-white text-sm">Download PO-4/5/6</span>
+                            <span class="text-xs text-slate-500 mt-1">.xlsx format</span>
+                        </button>
+                        <button id="btn-download-json" class="flex flex-col items-center justify-center p-6 bg-slate-800/50 hover:bg-indigo-500/10 border border-slate-700 hover:border-indigo-500/50 rounded-xl transition-all group">
+                            <svg class="w-8 h-8 text-indigo-500 mb-2 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                            <span class="font-semibold text-white text-sm">Download Schema</span>
+                            <span class="text-xs text-slate-500 mt-1">.json format</span>
+                        </button>
+                    </div>
+                    
+                    <button onclick="location.reload()" class="mt-8 text-sm text-slate-400 hover:text-white transition-colors underline underline-offset-4 decoration-slate-600 hover:decoration-white">Start New Project</button>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

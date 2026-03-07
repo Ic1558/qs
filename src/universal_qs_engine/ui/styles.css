@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .glass-panel {
+        @apply bg-slate-900/50 backdrop-blur-xl supports-[backdrop-filter]:bg-slate-900/50;
+    }
+}
+
+.stage-view {
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+    transform: translateY(10px);
+    z-index: 0;
+}
+
+.stage-view.active-stage {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    z-index: 10;
+}
+
+/* Indicators */
+.group.is-active .indicator {
+    @apply bg-indigo-500 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.5)];
+}
+.group.is-active .title {
+    @apply text-indigo-400 font-semibold;
+}
+.group.is-done .indicator {
+    @apply bg-emerald-500 border-emerald-400;
+}
+.group.is-done .title {
+    @apply text-emerald-400;
+}

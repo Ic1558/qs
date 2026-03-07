@@ -1,0 +1,32 @@
+module: universal_qs_engine
+version: "0.1.0"
+purpose: Universal QS lane for PDF/DWG intake, normalized quantity takeoff, BOQ workbook planning, and audit-ready export.
+entrypoint: universal_qs_engine.service:serve
+
+contracts:
+  request: universal_qs_request_v1
+  response: universal_qs_result_v1
+  event: universal_qs_event_v1
+  output: po_workbook_bundle_v1
+
+safety:
+  allow_roots:
+    - examples
+    - docs
+    - ops
+    - outputs
+    - tmp
+  hard_deny_globs:
+    - ".env*"
+    - "*.key"
+    - "*.pem"
+    - "../core/**"
+    - "../core_brain/**"
+    - "../system/**"
+    - "../runtime/**"
+
+notes:
+  - "Health endpoint is /api/health."
+  - "Preview endpoint is /api/v1/takeoff/preview."
+  - "Low-confidence OCR or missing PDF calibration must route to manual review."
+  - "Workbook outputs must preserve PO-4, PO-5, PO-6 and proof sheets."
