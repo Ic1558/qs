@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.0luka.universal-qs-api</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/icmini/0luka/.venv_estimator/bin/python3</string>
+    <string>-m</string>
+    <string>universal_qs_engine.cli</string>
+    <string>serve-health</string>
+    <string>--port</string>
+    <string>7084</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONPATH</key>
+    <string>/Users/icmini/0luka/repos/qs/src</string>
+    <key>LUKA_RUNTIME_ROOT</key>
+    <string>/Users/icmini/0luka_runtime</string>
+  </dict>
+  <key>WorkingDirectory</key>
+  <string>/Users/icmini/0luka/repos/qs</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/icmini/0luka_runtime/logs/universal_qs_api.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/icmini/0luka_runtime/logs/universal_qs_api.err.log</string>
+</dict>
+</plist>
