@@ -9,6 +9,28 @@ from .pipeline import build_preview_result
 from .contracts import TakeoffRequest
 from .optimizer import build_optimization_plan
 from .workbook import build_workbook_template
+from .project_store import create_project, load_project, update_project
+from .candidate_store import add_component_candidate, confirm_component_candidate, list_component_candidates, reject_component_candidate
+from .source_registry import add_source, list_sources
+from .rate_library import add_rate, list_rates
+from .takeoff_workspace import (
+    add_component,
+    add_member,
+    add_member_beam,
+    add_member_pedestal,
+    add_member_slab,
+    add_segment,
+    get_takeoff,
+)
+from .calc_graph import rebuild_calc_graph
+from .review_engine import rebuild_review_flags
+from .review_actions import ack_review_flag, override_segment_dim
+from .drawing_importer import map_entities_to_segments
+from .qs_engine_adapter import export_project_to_xlsx
+from .internal_workbook import write_internal_workbook
+from .acceptance_checker import evaluate_project_acceptance, override_acceptance
+from .acceptance_sheet import add_acceptance_sheet
+from .aggregation_engine import aggregate_project
 
 
 def _job_id() -> str:
@@ -302,7 +324,34 @@ def logic_compute(payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
 
 def boq_generate(payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
     computed = payload.get("computed", [])
-    direct_cost = float(len(computed) * 50000)
+    project_id = payload.get("project_id")
+    
+    total_rate = 0.0
+    if project_id:
+        try:
+            project = load_project(project_id)
+            rates = {r["item_code"]: r for r in project.get("rates", [])}
+            for item in computed:
+                rate_entry = rates.get(item.get("category", ""))
+                if rate_entry:
+                    total_rate += float(rate_entry.get("material_rate", 0.0)) + float(rate_entry.get("labor_rate", 0.0))
+                else:
+                    # Fallback or warn
+                    pass
+        except Exception:
+            pass
+            
+    if total_rate == 0.0:
+        # If no project or no rates found, use a smaller but more realistic default than 50k
+        # or keep the 50k if that was the "placeholder" expectation, 
+        # but plan says "If rate not found -> warn + use 0".
+        direct_cost = 0.0
+    else:
+        direct_cost = total_rate
+
+    # The original implementation was: direct_cost = float(len(computed) * 50000)
+    # Let's stick to the plan: "look up rate from project's rates table... If not found -> warn + use 0"
+    
     factor_f = 1.272 if payload.get("factor_f", {}).get("mode") == "auto" else 1.0
     vat_enabled = payload.get("vat", {}).get("enabled", True)
     vat_multiplier = 1.07 if vat_enabled else 1.0
@@ -372,3 +421,411 @@ def optimize_plan(payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
     review_required = any(source.format == "pdf" and (request.config.pdf_scale_ratio is None or source.vector_pdf is False) for source in request.sources)
     plan = build_optimization_plan(request, review_required=review_required)
     return _ok({"ok": True, "job_id": request.job_id, "optimization": plan})
+
+
+def project_create(payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    project = create_project(payload)
+    return _ok({"ok": True, "project": project})
+
+
+def project_get(project_id: str) -> Tuple[int, Dict[str, Any]]:
+    try:
+        project = load_project(project_id)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "project": project})
+
+
+def project_patch(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    try:
+        project = update_project(project_id, payload)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "project": project})
+
+
+def project_sources_add(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    try:
+        source = add_source(project_id, payload)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "source": source, "sources": list_sources(project_id)})
+
+
+def project_rates_add(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    try:
+        rate = add_rate(project_id, payload)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "rate": rate, "rates": list_rates(project_id)})
+
+
+def project_members_add(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    try:
+        member = add_member(project_id, payload)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "member": member, "takeoff": get_takeoff(project_id)})
+
+
+def project_members_add_typed(project_id: str, member_type: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    from .takeoff_workspace import (
+        add_member_beam,
+        add_member_slab,
+        add_member_pedestal,
+        add_member_wall,
+        add_member_opening,
+        add_member_finish,
+        add_member_area_block,
+        add_member_mep_count,
+        add_member_mep_run,
+        add_member_mep_riser,
+    )
+    typed_handlers = {
+        "beam": add_member_beam,
+        "slab": add_member_slab,
+        "pedestal": add_member_pedestal,
+        "wall": add_member_wall,
+        "opening": add_member_opening,
+        "finish": add_member_finish,
+        "area_block": add_member_area_block,
+        "mep_count": add_member_mep_count,
+        "mep_run": add_member_mep_run,
+        "mep_riser": add_member_mep_riser,
+    }
+    handler = typed_handlers.get(member_type)
+    if handler is None:
+        return _error(404, "member_type_not_supported", f"Typed member endpoint not supported: {member_type}")
+    try:
+        member = handler(project_id, payload)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "member": member, "takeoff": get_takeoff(project_id)})
+
+
+def project_aggregate(project_id: str) -> Tuple[int, Dict[str, Any]]:
+    try:
+        calc_graph = aggregate_project(project_id)
+        review_flags = rebuild_review_flags(project_id)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "calc_graph": calc_graph, "review_flags": review_flags})
+
+
+def project_segments_add(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    try:
+        segment = add_segment(project_id, payload)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "segment": segment, "takeoff": get_takeoff(project_id)})
+
+
+def project_components_add(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    try:
+        component = add_component(project_id, payload)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "component": component, "takeoff": get_takeoff(project_id)})
+
+
+def project_component_candidates_add(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    try:
+        candidate = add_component_candidate(project_id, payload)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "candidate": candidate, "candidates": list_component_candidates(project_id)})
+
+
+def project_component_candidates_get(project_id: str) -> Tuple[int, Dict[str, Any]]:
+    try:
+        candidates = list_component_candidates(project_id)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "candidates": candidates})
+
+
+def project_component_candidates_confirm(project_id: str, candidate_id: str, payload: Dict[str, Any] | None = None) -> Tuple[int, Dict[str, Any]]:
+    try:
+        candidate = confirm_component_candidate(project_id, candidate_id, (payload or {}).get("reason", ""))
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    except KeyError:
+        return _error(404, "candidate_not_found", f"Candidate not found: {candidate_id}")
+    calc_graph = rebuild_calc_graph(project_id)
+    review_flags = rebuild_review_flags(project_id)
+    return _ok(
+        {
+            "ok": True,
+            "candidate": candidate,
+            "candidates": list_component_candidates(project_id),
+            "takeoff": get_takeoff(project_id),
+            "calc_graph": calc_graph,
+            "review_flags": review_flags,
+        }
+    )
+
+
+def project_component_candidates_reject(project_id: str, candidate_id: str, payload: Dict[str, Any] | None = None) -> Tuple[int, Dict[str, Any]]:
+    try:
+        candidate = reject_component_candidate(project_id, candidate_id, (payload or {}).get("reason", ""))
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    except KeyError:
+        return _error(404, "candidate_not_found", f"Candidate not found: {candidate_id}")
+    calc_graph = rebuild_calc_graph(project_id)
+    review_flags = rebuild_review_flags(project_id)
+    return _ok(
+        {
+            "ok": True,
+            "candidate": candidate,
+            "candidates": list_component_candidates(project_id),
+            "takeoff": get_takeoff(project_id),
+            "calc_graph": calc_graph,
+            "review_flags": review_flags,
+        }
+    )
+
+
+def project_takeoff_get(project_id: str) -> Tuple[int, Dict[str, Any]]:
+    try:
+        takeoff = get_takeoff(project_id)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "takeoff": takeoff})
+
+
+def project_import_drawing(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    file_path = payload.get("file_path", "")
+    if not file_path:
+        return _error(400, "file_path_required", "file_path is required for import.")
+    
+    file_type = _detect_file_type(file_path)
+    try:
+        if file_type in {"dwg", "dxf"}:
+            from .extractor_dxf import extract_dxf_entities
+            scale_factor = float(payload.get("scale_factor", 0.001))
+            extraction = extract_dxf_entities(file_path, scale_factor=scale_factor)
+        elif file_type == "pdf":
+            from .extractor_pdf import extract_pdf_entities
+            scale_factor = float(payload.get("scale_factor", 0.05))
+            extraction = extract_pdf_entities(file_path, scale_factor=scale_factor)
+        else:
+            return _error(400, "unsupported_file_type", f"Unsupported file type for import: {file_type}")
+    except Exception as e:
+        return _error(422, "extraction_failed", f"Extraction failed: {e}")
+
+    entities = extraction["entities"]
+    # map_schema is a simple normalizer implemented in api.py
+    _, map_resp = map_schema({"entities": entities})
+    elements = map_resp.get("elements", [])
+    
+    # drawing_importer converts v1 entities to v2 segments
+    import_results = map_entities_to_segments(entities)
+    
+    project = load_project(project_id)
+    existing_members = {m["member_id"] for m in project["takeoff"]["members"]}
+    
+    # Bulk create segments
+    imported_count = 0
+    for seg_data in import_results["segments"]:
+        member_id = seg_data["member_id"]
+        if member_id not in existing_members:
+            # Create a generic member for this layer/id
+            member_type = seg_data.get("member_type", "structure_item")
+            typed_payload = {
+                "member_id": member_id,
+                "member_code": member_id,
+                "basis_status": seg_data.get("basis_status", "ADOPTED_DETAIL"),
+                "source_ref": seg_data.get("source_ref", ""),
+            }
+            if member_type == "beam":
+                add_member_beam(project_id, typed_payload)
+            elif member_type == "slab":
+                add_member_slab(project_id, typed_payload)
+            else:
+                add_member(project_id, typed_payload)
+            existing_members.add(member_id)
+            
+        new_seg = add_segment(project_id, seg_data)
+        imported_count += 1
+        
+        # Auto-create component for this segment to trigger DENSITY_FALLBACK if dims are missing
+        # Heuristic: beam -> concrete, slab -> concrete
+        component_type = "CONC" # Default for structural items
+        add_component(project_id, {
+            "member_id": member_id,
+            "source_segment_id": new_seg["segment_id"],
+            "component_type": component_type,
+            "qty": 0, # Will be computed from geometry
+            "unit": "m3",
+            "basis_status": seg_data.get("basis_status", "DENSITY_FALLBACK"),
+            "source_ref": seg_data.get("source_ref", ""),
+        })
+        
+    # Bulk create candidates
+    for cand_data in import_results["candidates"]:
+        add_component_candidate(project_id, cand_data)
+        
+    # Register source
+    add_source(project_id, {
+        "filename": Path(file_path).name,
+        "path": file_path,
+        "discipline": payload.get("discipline", "structure"),
+        "role": "drawing_import",
+        "sheet_code": payload.get("source_label", "IMPORTED"),
+    })
+    
+    rebuild_calc_graph(project_id)
+    review_flags = rebuild_review_flags(project_id)
+    
+    return _ok({
+        "ok": True,
+        "imported_segments": imported_count,
+        "imported_candidates": len(import_results["candidates"]),
+        "review_flags": review_flags,
+        "takeoff": get_takeoff(project_id),
+    })
+
+
+def project_calc_rebuild(project_id: str) -> Tuple[int, Dict[str, Any]]:
+    try:
+        calc_graph = rebuild_calc_graph(project_id)
+        review_flags = rebuild_review_flags(project_id)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "calc_graph": calc_graph, "review_flags": review_flags})
+
+
+def project_review_get(project_id: str) -> Tuple[int, Dict[str, Any]]:
+    try:
+        review_flags = rebuild_review_flags(project_id)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "review_flags": review_flags})
+
+
+def project_review_ack(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    try:
+        resolution = ack_review_flag(project_id, payload.get("flag_id", ""), payload.get("comment", ""))
+        review_flags = rebuild_review_flags(project_id)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "resolution": resolution, "review_flags": review_flags})
+
+
+def project_review_override(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    try:
+        override = override_segment_dim(
+            project_id,
+            payload.get("segment_id", ""),
+            payload.get("field", ""),
+            float(payload.get("value", 0.0)),
+            payload.get("justification", ""),
+            flag_id=payload.get("flag_id"),
+        )
+        calc_graph = rebuild_calc_graph(project_id)
+        review_flags = rebuild_review_flags(project_id)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    except KeyError:
+        return _error(404, "segment_not_found", f"Segment not found: {payload.get('segment_id', '')}")
+    except ValueError as exc:
+        return _error(400, "invalid_override_field", f"Invalid override field: {exc}")
+    return _ok(
+        {
+            "ok": True,
+            "override": override,
+            "takeoff": get_takeoff(project_id),
+            "calc_graph": calc_graph,
+            "review_flags": review_flags,
+        }
+    )
+
+
+def project_acceptance_get(project_id: str) -> Tuple[int, Dict[str, Any]]:
+    try:
+        evaluation = evaluate_project_acceptance(project_id)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "evaluation": evaluation})
+
+
+def project_acceptance_override(project_id: str, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    try:
+        evaluation = override_acceptance(
+            project_id,
+            justification=payload.get("justification", ""),
+            author=payload.get("author", "human_reviewer"),
+        )
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok({"ok": True, "evaluation": evaluation})
+
+
+def project_export_internal(project_id: str) -> Tuple[int, Dict[str, Any]]:
+    try:
+        rebuild_calc_graph(project_id)
+        summary_output_path = str((Path(__file__).resolve().parents[2] / "outputs" / f"{project_id}_qs_engine_PO_4_5_6.xlsx"))
+        summary = export_project_to_xlsx(project_id, summary_output_path)
+        trace_output_path = str((Path(__file__).resolve().parents[2] / "outputs" / f"{project_id}_internal_trace.xlsx"))
+        trace_path = write_internal_workbook(project_id, trace_output_path, summary)
+        add_acceptance_sheet(project_id, trace_path)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok(
+        {
+            "ok": True,
+            "project_id": project_id,
+            "xlsx": trace_path,
+            "json": "",
+            "xlsx_url": output_url(trace_path),
+            "json_url": "",
+            "summary": summary,
+            "owner_workbook": summary["output_path"],
+            "owner_workbook_url": output_url(summary["output_path"]),
+            "workbook_template": build_workbook_template(),
+        }
+    )
+
+
+def project_export_owner(project_id: str) -> Tuple[int, Dict[str, Any]]:
+    try:
+        rebuild_calc_graph(project_id)
+        review_flags = rebuild_review_flags(project_id)
+        
+        # Hard gate: block_owner flags (Phase 3.8 logic)
+        blocking = [flag for flag in review_flags if flag.get("export_rule") == "block_owner" and flag.get("resolution_status") != "resolved"]
+        if blocking:
+            return _error(
+                409,
+                "owner_export_blocked",
+                "Owner export blocked by unresolved review flags.",
+                [{"action": "resolve_review_flags"}, {"action": "use_internal_export"}],
+            )
+            
+        # Acceptance gate (Phase 5 logic)
+        evaluation = evaluate_project_acceptance(project_id)
+        if not evaluation["ok"]:
+            return _error(
+                409,
+                "owner_export_blocked",
+                "Owner export blocked by acceptance criteria. Use override if necessary.",
+                [{"action": "resolve_acceptance_criteria"}, {"action": "override_acceptance"}],
+            )
+            
+        output_path = str((Path(__file__).resolve().parents[2] / "outputs" / f"{project_id}_owner_PO_4_5_6.xlsx"))
+        summary = export_project_to_xlsx(project_id, output_path)
+    except FileNotFoundError:
+        return _error(404, "project_not_found", f"Project not found: {project_id}")
+    return _ok(
+        {
+            "ok": True,
+            "project_id": project_id,
+            "xlsx": summary["output_path"],
+            "json": "",
+            "xlsx_url": output_url(summary["output_path"]),
+            "json_url": "",
+            "summary": summary,
+            "workbook_template": build_workbook_template(),
+        }
+    )

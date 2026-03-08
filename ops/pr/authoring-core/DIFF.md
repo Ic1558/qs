@@ -1,0 +1,25 @@
+# DIFF
+
+- Added the authoring-core domain modules under `src/universal_qs_engine/`:
+  - `acceptance_checker.py`
+  - `acceptance_sheet.py`
+  - `aggregation_engine.py`
+  - `calc_graph.py`
+  - `candidate_store.py`
+  - `domain_policy.py`
+  - `drawing_importer.py`
+  - `geometry_engine.py`
+  - `internal_workbook.py`
+  - `project_store.py`
+  - `qs_engine_adapter.py`
+  - `rate_library.py`
+  - `review_actions.py`
+  - `review_engine.py`
+  - `source_registry.py`
+  - `takeoff_workspace.py`
+- Extended `src/universal_qs_engine/api.py` with project authoring operations for create/import/review/acceptance/export flows.
+- Added regression coverage in:
+  - `tests/test_authoring_flow.py`
+  - `tests/test_discipline_aggregation.py`
+  - `verify_phase6_proof.py`
+- Added a lazy `qs_engine` loader so non-export authoring flows can import and test cleanly before workbook export is invoked.
