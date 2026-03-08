@@ -18,6 +18,30 @@ from .api import (
     logic_compute,
     map_schema,
     optimize_plan,
+    project_acceptance_get,
+    project_acceptance_override,
+    project_aggregate,
+    project_calc_rebuild,
+    project_component_candidates_add,
+    project_component_candidates_confirm,
+    project_component_candidates_get,
+    project_component_candidates_reject,
+    project_components_add,
+    project_create,
+    project_export_internal,
+    project_export_owner,
+    project_get,
+    project_import_drawing,
+    project_members_add,
+    project_members_add_typed,
+    project_patch,
+    project_rates_add,
+    project_review_get,
+    project_review_ack,
+    project_review_override,
+    project_segments_add,
+    project_sources_add,
+    project_takeoff_get,
 )
 from .artifacts import DEFAULT_OUTPUT_DIR
 from .contracts import TakeoffRequest
@@ -39,6 +63,27 @@ def build_health_payload() -> Dict[str, Any]:
         "supported_formats": SUPPORTED_FORMATS,
         "endpoints": [
             "/api/health",
+            "/api/v2/projects",
+            "/api/v2/projects/:id",
+            "/api/v2/projects/:id/sources",
+            "/api/v2/projects/:id/members",
+            "/api/v2/projects/:id/members/:type",
+            "/api/v2/projects/:id/segments",
+            "/api/v2/projects/:id/components",
+            "/api/v2/projects/:id/candidates/components",
+            "/api/v2/projects/:id/candidates/components/:candidate_id/confirm",
+            "/api/v2/projects/:id/candidates/components/:candidate_id/reject",
+            "/api/v2/projects/:id/takeoff",
+            "/api/v2/projects/:id/rates",
+            "/api/v2/projects/:id/review",
+            "/api/v2/projects/:id/review/ack",
+            "/api/v2/projects/:id/review/override",
+            "/api/v2/projects/:id/acceptance",
+            "/api/v2/projects/:id/acceptance/override",
+            "/api/v2/projects/:id/import/drawing",
+            "/api/v2/projects/:id/calc-graph/rebuild",
+            "/api/v2/projects/:id/export/internal",
+            "/api/v2/projects/:id/export/owner",
             "/api/v1/takeoff/preview",
             "/api/v1/intake/prepare",
             "/api/v1/intake/upload",
@@ -91,6 +136,36 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
+    def _split_path(self) -> list[str]:
+        path = self.path.split("?")[0].strip("/")
+        return [part for part in path.split("/") if part]
+
+    def _handle_v2_get(self) -> bool:
+        parts = self._split_path()
+        if parts[:2] != ["api", "v2"]:
+            return False
+        if parts == ["api", "v2", "projects"]:
+            self._send_json(400, {"ok": False, "error": {"code": "project_id_required", "message": "Use /api/v2/projects/:id"}})
+            return True
+        if len(parts) >= 4 and parts[2] == "projects":
+            project_id = parts[3]
+            if len(parts) == 4:
+                status, payload = project_get(project_id)
+            elif len(parts) == 5 and parts[4] == "takeoff":
+                status, payload = project_takeoff_get(project_id)
+            elif len(parts) == 6 and parts[4] == "candidates" and parts[5] == "components":
+                status, payload = project_component_candidates_get(project_id)
+            elif len(parts) == 5 and parts[4] == "review":
+                status, payload = project_review_get(project_id)
+            elif len(parts) == 5 and parts[4] == "acceptance":
+                status, payload = project_acceptance_get(project_id)
+            else:
+                self._send_json(404, {"error": "not found"})
+                return True
+            self._send_json(status, payload)
+            return True
+        return False
+
     def _job_state(self, job_id: str) -> Dict[str, Any]:
         return JOB_STATE.setdefault(job_id, {})
 
@@ -109,6 +184,8 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         if self.path == "/api/health":
             self._send_json(200, build_health_payload())
+            return
+        if self._handle_v2_get():
             return
         
         # Serve static UI files
@@ -166,6 +243,65 @@ class RequestHandler(BaseHTTPRequestHandler):
         self._send_json(404, {"error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
+        parts = self._split_path()
+        if parts[:2] == ["api", "v2"]:
+            length = int(self.headers.get("Content-Length", "0"))
+            body = self.rfile.read(length) if length else b"{}"
+            try:
+                payload_data = json.loads(body.decode("utf-8")) if body else {}
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                self._send_json(400, {"ok": False, "error": {"code": "invalid_json", "message": str(exc)}})
+                return
+
+            if parts == ["api", "v2", "projects"]:
+                status, payload = project_create(payload_data)
+                self._send_json(status, payload)
+                return
+            if len(parts) >= 5 and parts[2] == "projects":
+                project_id = parts[3]
+                tail = parts[4:]
+                if tail == ["sources"]:
+                    status, payload = project_sources_add(project_id, payload_data)
+                elif tail == ["members"]:
+                    status, payload = project_members_add(project_id, payload_data)
+                elif len(tail) == 2 and tail[0] == "members":
+                    status, payload = project_members_add_typed(project_id, tail[1], payload_data)
+                elif tail == ["segments"]:
+                    status, payload = project_segments_add(project_id, payload_data)
+                elif tail == ["components"]:
+                    status, payload = project_components_add(project_id, payload_data)
+                elif tail == ["candidates", "components"]:
+                    status, payload = project_component_candidates_add(project_id, payload_data)
+                elif len(tail) == 4 and tail[:2] == ["candidates", "components"] and tail[3] == "confirm":
+                    status, payload = project_component_candidates_confirm(project_id, tail[2], payload_data)
+                elif len(tail) == 4 and tail[:2] == ["candidates", "components"] and tail[3] == "reject":
+                    status, payload = project_component_candidates_reject(project_id, tail[2], payload_data)
+                elif tail == ["rates"]:
+                    status, payload = project_rates_add(project_id, payload_data)
+                elif tail == ["review", "ack"]:
+                    status, payload = project_review_ack(project_id, payload_data)
+                elif tail == ["review", "override"]:
+                    status, payload = project_review_override(project_id, payload_data)
+                elif tail == ["acceptance", "override"]:
+                    status, payload = project_acceptance_override(project_id, payload_data)
+                elif tail == ["aggregate"]:
+                    status, payload = project_aggregate(project_id)
+                elif tail == ["import", "drawing"]:
+                    status, payload = project_import_drawing(project_id, payload_data)
+                elif tail == ["calc-graph", "rebuild"]:
+                    status, payload = project_calc_rebuild(project_id)
+                elif tail == ["export", "internal"]:
+                    status, payload = project_export_internal(project_id)
+                elif tail == ["export", "owner"]:
+                    status, payload = project_export_owner(project_id)
+                else:
+                    self._send_json(404, {"error": "not found"})
+                    return
+                self._send_json(status, payload)
+                return
+            self._send_json(404, {"error": "not found"})
+            return
+
         if self.path == "/api/v1/intake/upload":
             ctype = self.headers.get("content-type", "")
             if "multipart/form-data" not in ctype:
@@ -203,6 +339,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                         input_item["stored_path"] = stored_path
                         uploads[input_item["file"]] = stored_path
                     self._job_state(str(response["job_id"]))["uploads"] = uploads
+                    if saved_files:
+                        response["file_path"] = saved_files[0]
                 self._send_json(status_code, response)
             except Exception as exc:
                 self._send_json(500, {"error": str(exc)})
@@ -248,6 +386,21 @@ class RequestHandler(BaseHTTPRequestHandler):
             elif self.path == "/api/v1/boq/generate":
                 state["boq"] = payload
         self._send_json(status_code, payload)
+
+    def do_PATCH(self) -> None:  # noqa: N802
+        parts = self._split_path()
+        if parts[:2] != ["api", "v2"] or len(parts) != 4 or parts[2] != "projects":
+            self._send_json(404, {"error": "not found"})
+            return
+        length = int(self.headers.get("Content-Length", "0"))
+        body = self.rfile.read(length) if length else b"{}"
+        try:
+            payload_data = json.loads(body.decode("utf-8")) if body else {}
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            self._send_json(400, {"ok": False, "error": {"code": "invalid_json", "message": str(exc)}})
+            return
+        status, payload = project_patch(parts[3], payload_data)
+        self._send_json(status, payload)
 
     def log_message(self, format: str, *args: Any) -> None:
         return

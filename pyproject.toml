@@ -11,7 +11,9 @@ requires-python = ">=3.11"
 authors = [
   { name = "Codex" }
 ]
-dependencies = []
+dependencies = [
+  "qs-engine @ file:///Users/icmini/0luka/tools/qs_engine",
+]
 
 [project.optional-dependencies]
 low_cost = [

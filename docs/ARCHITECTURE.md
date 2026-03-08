@@ -1,35 +1,50 @@
-# Architecture
+# QS Engine Architecture - Multi-Discipline Aggregation
 
-## Intent
+This document summarizes the aggregation engine implemented in Phase 6.
 
-The repo is a thin implementation blueprint for a Universal QS engine that 0luka can load as a candidate module.
+## Multi-Discipline Flow
 
-## Pipeline
+The engine now supports a unified takeoff flow for Structure (ST), Architecture (AR), and MEP.
 
-```text
-Input Manager
-  -> PDF / DWG / DXF intake
-  -> normalization into universal element schema
-  -> discipline logic stubs
-     -> architecture: net area deductions
-     -> structure: volume + rebar density
-     -> mep: path length + fittings + riser injection
-  -> BOQ planning
-     -> PO-4 detailed proofs
-     -> PO-5 pricing rollup
-     -> PO-6 Factor F summary
-  -> audit/export planning
-```
+### 1. Ingestion
+Stateless entities from CAD/PDF extractions are mapped to stateful v2 members.
+- **ST**: Beams, Slabs, Pedestals (Geometry-heavy)
+- **AR**: Walls, Openings, Finishes, Area Blocks (Deduction-heavy)
+- **MEP**: Counts, Runs, Risers (Aggregation-heavy)
 
-## Runtime Surfaces
+### 2. Aggregation Engine
+The `aggregation_engine.py` acts as a cross-discipline logic layer:
+- **AR Wall Deductions**: Automatically calculates `net_area` for walls by deducting opening areas.
+- **Finish Mapping**: Propagates wall `net_area` to dependent finish layers (Paint, Render, etc.).
+- **MEP Auto-Seeding**: Converts MEP members (Runs/Counts) into calculation components automatically.
 
-- `universal_qs_engine.pipeline`: deterministic preview builder
-- `universal_qs_engine.api`: deterministic module endpoint handlers that mirror the expanded spec
-- `universal_qs_engine.optimizer`: cheap-first planning for lower-cost execution paths
-- `universal_qs_engine.workbook`: PO-4 / PO-5 / PO-6 template metadata and named ranges
-- `universal_qs_engine.service`: stdlib HTTP service with `/api/health` and module endpoints
-- `universal_qs_engine.cli`: command-line wrapper for local runs and launchd
+### 3. Calculation Graph
+The `calc_graph.py` remains the single source of truth for quantities.
+- Every row is tagged with its owning discipline.
+- Deductions and overrides are preserved in the audit trail.
 
-## Current Boundary
+### 4. Acceptance Gates
+Phase 5/6 extended the acceptance criteria to include:
+- `ar_walls_closed`: Every wall must have positive net area.
+- `mep_takeoff_closed`: Every MEP run/count must have positive quantity.
+- Manual overrides are supported with mandatory justification.
 
-This scaffold does not implement OCR, DWG parsing, or XLSX generation yet. It now defines the endpoint contracts, workbook structure, fallback rules, and final gate semantics needed to start Phase 1 without coupling the repo to 0luka internals.
+## Bridge & Orchestration (Phase 7)
+
+The QS Engine is integrated into the 0luka ecosystem via a bridge adapter.
+
+### Task Dispatching
+0luka core or Opal agents can submit a `qs.generate_boq` task. The `core/bridge.py` adapter automatically maps this intent to a `CLEC` operation that invokes the engine's CLI.
+
+### Pipeline Execution
+1. **Submit**: High-level task with `project_id`.
+2. **Execute**: The `CLECExecutor` runs the CLI command in a sandboxed environment.
+3. **Audit**: Results are captured, validated, and published to the task outbox.
+
+### Unified Enforcement
+The bridge command enforces the same cryptographic and metadata gates as the local SPA, ensuring no "shadow exports" bypass the governance layer.
+
+## Implementation Principles
+- **Hard Gate Priority**: `block_owner` flags (missing metadata) cannot be bypassed.
+- **Traceability**: Every row traces back to `source_ref` and `basis_status`.
+- **Fail-Open Calculation**: Incomplete geometry falls back to `DENSITY_FALLBACK` rather than crashing.
