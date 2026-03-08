@@ -2,6 +2,11 @@
 
 ## Candidate Registration
 
+Canonical source:
+- GitHub: `https://github.com/Ic1558/qs`
+- Local checkout: `/Users/icmini/0luka/repos/qs`
+- Operator runbook: `docs/RUNBOOK.md`
+
 1. Start the module service:
 
 ```bash
@@ -9,7 +14,7 @@ cd /Users/icmini/0luka/repos/qs
 PYTHONPATH=src python3 -m universal_qs_engine.cli serve-health --port 7084
 ```
 
-2. Add the candidate entry from `ops/module_registry_entry.json` into `0luka/core_brain/ops/module_registry.json`.
+2. Add the candidate entry from `ops/module_registry_entry.json` into `0luka/core_brain/ops/module_registry.json`, or keep the existing canonical entry there in sync with this repo.
 
 3. Validate from the 0luka root:
 
@@ -22,6 +27,8 @@ python3 core_brain/ops/modulectl.py health universal_qs_api
 ## Module Boundary
 
 This repo remains a standalone module. The repo boundary is `repos/qs`, while the internal Python package remains `universal_qs_engine`. Hardening for vector extraction, review queues, and export lives inside that package.
+
+The in-tree `repos/universal_qs_engine` copy inside the main 0luka repo is legacy-only. Core should treat this `qs` repo as the canonical module source.
 
 0luka core should connect to it only through:
 

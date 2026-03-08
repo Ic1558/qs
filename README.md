@@ -1,21 +1,45 @@
 # Universal QS Engine
 
-Standalone repo scaffold for a Universal Quantity Surveying engine that can plug into 0luka core.
+Local-first QS authoring repo that plugs into 0luka later.
 
-This repo is intended to stay as a separate module repo. 0luka core integrates with it through the declared module manifest, plugin contract, and health/API endpoints rather than by inlining the extraction logic into core.
+This repo is now a `Multi-discipline aggregation engine` supporting Structure, Architecture, and MEP.
 
-## Scope
+## Current Milestone
 
-This repo packages the concept from `chats_2026-03-06_spec_plan_dod_pprs.md` into a 0luka-compatible module:
+- `ST Gate`: CLEARED
+- `AR Gate`: OPEN (PROVEN via multi-discipline aggregation)
+- `MEP Gate`: OPEN (PROVEN via multi-discipline aggregation)
+- `Universal Gate`: CLEARED (PROVEN via Bridge & Orchestration)
 
-- Intake for PDF and DWG/DXF sources
-- Normalized cross-discipline takeoff schema
-- Architecture, Structure, and MEP logic placeholders
-- BOQ workbook planning for PO-4, PO-5, and PO-6
-- Auditability and manual-review queue hooks
-- Standard-library health/API surface for 0luka module registration
-- Module-level API contracts for intake, extraction, schema mapping, logic, BOQ generation, export, and acceptance gating
-- Smart low-cost optimization planning that prefers cheaper extraction paths before full processing
+What this means:
+- multi-discipline aggregation engine is live (ST/AR/MEP)
+- AR wall deductions and finish mapping are functional
+- MEP count/run items are supported and traceable
+- module is fully integrated into 0luka bridge/CLEC pipeline
+- automated task orchestration via `qs.generate_boq` intent is active
+- workbook traceability covers deduction rules and discipline tags
+
+## Scope Right Now
+
+The repo currently owns:
+- project state
+- multi-discipline aggregation engine
+- AR/MEP specialized member models
+- 0luka bridge adapter and task orchestration logic
+- source registry
+- rate library
+- takeoff workspace
+- calc graph
+- review engine
+- web API and local UI
+- adapter to `tools/qs_engine`
+
+
+The repo does not yet claim:
+- accepted AR quantity workflow
+- accepted MEP quantity workflow
+- universal automatic takeoff
+- production-grade drawing extraction for all disciplines
 
 ## Layout
 
@@ -34,6 +58,7 @@ qs/
 
 ```bash
 cd /Users/icmini/0luka/repos/qs
+NO_START=1 zsh tools/bootstrap.zsh
 python3 -m unittest discover -s tests
 PYTHONPATH=src python3 -m universal_qs_engine.cli health
 PYTHONPATH=src python3 -m universal_qs_engine.cli preview --input examples/request.json
@@ -41,6 +66,21 @@ PYTHONPATH=src python3 -m universal_qs_engine.cli api intake_prepare --input exa
 PYTHONPATH=src python3 -m universal_qs_engine.cli api optimize_plan --input examples/request.json
 PYTHONPATH=src python3 -m universal_qs_engine.cli serve-health --port 7084
 ```
+
+## Acceptance Discipline
+
+Do not claim a discipline gate from fixtures or unit tests alone.
+
+A gate is cleared only when:
+- a real project runs through `repos/qs` project state
+- review/export behavior is exercised from the app/domain layer
+- the output workbook traces correctly to the underlying member and source basis
+
+Current accepted proof:
+- `ST Gate` cleared from Kamolpat structure workflow
+
+See [ACCEPTANCE.md](/Users/icmini/0luka/repos/qs/docs/ACCEPTANCE.md).
+See [AR_MEMBER_MODEL.md](/Users/icmini/0luka/repos/qs/docs/AR_MEMBER_MODEL.md) before any AR feature work starts.
 
 ## 0luka Integration
 
@@ -53,4 +93,4 @@ PYTHONPATH=src python3 -m universal_qs_engine.cli serve-health --port 7084
 
 See `docs/INTEGRATION.md` for the registration steps.
 
-See `docs/API_CONTRACTS.md` and `docs/ACCEPTANCE.md` for the expanded spec alignment.
+See `docs/API_CONTRACTS.md`, `docs/ACCEPTANCE.md`, and `docs/RUNBOOK.md` for the expanded spec alignment and operator guidance.
