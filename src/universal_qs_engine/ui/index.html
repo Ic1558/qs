@@ -3,204 +3,440 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal QS Engine</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>QS Authoring Workspace</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-inter antialiased selection:bg-indigo-500/30">
-    
-    <!-- Background Decorators -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[120px] rounded-full mix-blend-screen"></div>
-        <div class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 blur-[120px] rounded-full mix-blend-screen"></div>
-    </div>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand-block">
+                <p class="brand-kicker">Local-First QS</p>
+                <h1>Authoring Workspace</h1>
+                <p class="brand-copy">Build BOQ from traceable raw takeoff. Extraction stays assistive.</p>
+            </div>
 
-    <div class="relative z-10 max-w-6xl mx-auto px-4 py-8 h-full flex flex-col gap-6">
-        
-        <!-- Header -->
-        <header class="flex items-center justify-between glass-panel p-4 rounded-2xl shadow-xl border border-white/5">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                </div>
+            <nav class="nav-stack">
+                <button class="nav-link is-active" data-pane="setup">Setup</button>
+                <button class="nav-link" data-pane="sources">Sources</button>
+                <button class="nav-link" data-pane="takeoff">Takeoff</button>
+                <button class="nav-link" data-pane="rates">Rates</button>
+                <button class="nav-link" data-pane="review">Review</button>
+                <button class="nav-link" data-pane="export">Export</button>
+            </nav>
+
+            <section class="status-card">
+                <h2>Project State</h2>
+                <dl>
+                    <div><dt>Project ID</dt><dd id="project-id">Not created</dd></div>
+                    <div><dt>Members</dt><dd id="metric-members">0</dd></div>
+                    <div><dt>Segments</dt><dd id="metric-segments">0</dd></div>
+                    <div><dt>Components</dt><dd id="metric-components">0</dd></div>
+                    <div><dt>Review Flags</dt><dd id="metric-flags">0</dd></div>
+                </dl>
+            </section>
+        </aside>
+
+        <main class="workspace">
+            <header class="workspace-header">
                 <div>
-                    <h1 class="font-outfit text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Universal QS Engine</h1>
-                    <p class="text-xs text-slate-400 font-medium tracking-wide">LOW-COST MODE ENABLED</p>
+                    <p class="eyebrow">Repo: <code>repos/qs</code></p>
+                    <h2 id="pane-title">Setup</h2>
                 </div>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <div class="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="text-xs font-semibold text-emerald-400 tracking-wide" id="global-status">SYSTEM READY</span>
+                <div class="header-actions">
+                    <button id="btn-refresh" class="ghost-btn">Refresh</button>
+                    <button id="btn-rebuild" class="ghost-btn">Rebuild Calc</button>
                 </div>
-            </div>
-        </header>
+            </header>
 
-        <!-- Main Content Layout -->
-        <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
-            
-            <!-- Sidebar: Config & Flow -->
-            <aside class="lg:col-span-4 flex flex-col gap-4">
-                
-                <!-- Setup Panel -->
-                <div class="glass-panel p-5 rounded-2xl border border-white/5 shadow-xl transition-all" id="panel-setup">
-                    <h2 class="font-outfit text-lg font-semibold text-white mb-4">Project Settings</h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm text-slate-400 font-medium mb-1.5">Default Floor Height (m)</label>
-                            <input type="number" id="cfg-height" value="3.2" step="0.1" class="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm text-slate-400 font-medium mb-1.5">Factor F Mode</label>
-                            <select id="cfg-factorf" class="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors">
-                                <option value="auto">Auto-Calculate (Building)</option>
-                                <option value="manual_1.0">Fixed (1.000)</option>
+            <section class="pane is-active" data-pane="setup">
+                <div class="card">
+                    <h3>Create Project</h3>
+                    <div class="form-grid">
+                        <label>Project Name<input id="project-name" value="Kamolpat QS Workspace"></label>
+                        <label>Client<input id="project-client" value="Wei"></label>
+                        <label>Site<input id="project-site" value="Sukhumvit 49-1"></label>
+                        <label>Project Type
+                            <select id="project-type">
+                                <option value="main">Main</option>
+                                <option value="vo">VO</option>
+                                <option value="addon">Addon</option>
                             </select>
+                        </label>
+                        <label>Factor Mode
+                            <select id="factor-mode">
+                                <option value="private">Private</option>
+                                <option value="thai_gov_building">Thai Gov Building</option>
+                                <option value="thai_gov_road">Thai Gov Road</option>
+                            </select>
+                        </label>
+                        <label>OH Rate<input id="overhead-rate" type="number" step="0.01" value="0.12"></label>
+                    </div>
+                    <div class="action-row">
+                        <button id="btn-create-project" class="primary-btn">Create Project</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Drawing Import</h3>
+                    <p class="subtle-copy">Upload DXF/PDF to auto-seed project segments and candidates. Human review required for DENSITY_FALLBACK cases.</p>
+                    <div class="form-grid">
+                        <label>Drawing File<input id="import-file" type="file" accept=".dxf,.dwg,.pdf"></label>
+                        <label>Scale Factor<input id="import-scale" type="number" step="0.0001" value="0.001"></label>
+                        <label>Discipline
+                            <select id="import-discipline">
+                                <option value="structure">Structure</option>
+                                <option value="architecture">Architecture</option>
+                            </select>
+                        </label>
+                        <label>Source Label<input id="import-label" placeholder="S-X1-301"></label>
+                    </div>
+                    <div class="action-row">
+                        <button id="btn-import-drawing" class="primary-btn">Upload + Import Drawing</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="pane" data-pane="sources">
+                <div class="card split-card">
+                    <div>
+                        <h3>Add Source</h3>
+                        <div class="form-grid">
+                            <label>Filename<input id="src-filename" placeholder="S-X1-301.pdf"></label>
+                            <label>Path<input id="src-path" placeholder="/path/to/file.pdf"></label>
+                            <label>Discipline
+                                <select id="src-discipline">
+                                    <option value="structure">Structure</option>
+                                    <option value="architecture">Architecture</option>
+                                    <option value="mep">MEP</option>
+                                </select>
+                            </label>
+                            <label>Revision<input id="src-revision" placeholder="R00 260304"></label>
+                            <label>Role
+                                <select id="src-role">
+                                    <option value="new">New</option>
+                                    <option value="old">Old</option>
+                                    <option value="reference">Reference</option>
+                                </select>
+                            </label>
+                            <label>Sheet Code<input id="src-sheet" placeholder="S-X1-307"></label>
                         </div>
-                        
-                        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-900/40 border border-slate-800">
-                            <div>
-                                <span class="block text-sm font-medium text-slate-300">Heavy Vision ML</span>
-                                <span class="block text-xs text-slate-500">Enable deep pattern recognition</span>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="cfg-vision" class="sr-only peer">
-                                <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                        <div class="action-row">
+                            <button id="btn-add-source" class="primary-btn">Add Source</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Registered Sources</h3>
+                        <div id="sources-list" class="list-box empty">No sources yet.</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="pane" data-pane="takeoff">
+                <div class="card">
+                    <h3>Add Structure Member</h3>
+                    <p class="subtle-copy">Use typed templates. Beam clear span, slab area, and pedestal H all gate owner export until they are closed.</p>
+                    <div class="template-switch">
+                        <button class="template-tab is-active" data-member-panel="beam">Beam</button>
+                        <button class="template-tab" data-member-panel="slab">Slab</button>
+                        <button class="template-tab" data-member-panel="pedestal">Pedestal</button>
+                        <button class="template-tab" data-member-panel="wall">Wall</button>
+                        <button class="template-tab" data-member-panel="opening">Opening</button>
+                        <button class="template-tab" data-member-panel="mep">MEP</button>
+                    </div>
+
+                    <div class="member-panel is-active" data-member-panel="beam">
+                        <div class="form-grid">
+                            <label>Member Code<input id="beam-member-code" placeholder="GB1"></label>
+                            <label>Level<input id="beam-level" placeholder="GF"></label>
+                            <label>Grid Ref<input id="beam-grid-ref" placeholder="A-1 to B-1"></label>
+                            <label>Clear Span<input id="beam-clear-span" type="number" step="0.001" value="0"></label>
+                            <label>Section Width<input id="beam-section-width" type="number" step="0.001" value="0"></label>
+                            <label>Section Depth<input id="beam-section-depth" type="number" step="0.001" value="0"></label>
+                            <label>Basis Status
+                                <select id="beam-basis">
+                                    <option value="VERIFIED_DETAIL">VERIFIED_DETAIL</option>
+                                    <option value="ADOPTED_DETAIL" selected>ADOPTED_DETAIL</option>
+                                    <option value="EST_GRID">EST_GRID</option>
+                                    <option value="DENSITY_FALLBACK">DENSITY_FALLBACK</option>
+                                </select>
+                            </label>
+                            <label>Source Ref<input id="beam-source" placeholder="S-X1-307/GB1"></label>
+                        </div>
+                        <div class="action-row">
+                            <button id="btn-add-beam-member" class="primary-btn">Add Beam</button>
+                        </div>
+                    </div>
+
+                    <div class="member-panel" data-member-panel="slab">
+                        <div class="form-grid">
+                            <label>Member Code<input id="slab-member-code" placeholder="S1"></label>
+                            <label>Level<input id="slab-level" placeholder="GF"></label>
+                            <label>Slab Type<input id="slab-type" placeholder="S1"></label>
+                            <label>Thickness<input id="slab-thickness" type="number" step="0.001" value="0.15"></label>
+                            <label>Area Block Area<input id="slab-area" type="number" step="0.001" value="0"></label>
+                            <label>Opening Deduction<input id="slab-opening" type="number" step="0.001" value="0"></label>
+                            <label>Basis Status
+                                <select id="slab-basis">
+                                    <option value="VERIFIED_DETAIL">VERIFIED_DETAIL</option>
+                                    <option value="ADOPTED_DETAIL" selected>ADOPTED_DETAIL</option>
+                                    <option value="EST_GRID">EST_GRID</option>
+                                    <option value="DENSITY_FALLBACK">DENSITY_FALLBACK</option>
+                                </select>
+                            </label>
+                            <label>Source Ref<input id="slab-source" placeholder="S-X1-101/S1"></label>
+                        </div>
+                        <div class="action-row">
+                            <button id="btn-add-slab-member" class="primary-btn">Add Slab</button>
+                        </div>
+                    </div>
+
+                    <div class="member-panel" data-member-panel="pedestal">
+                        <div class="form-grid">
+                            <label>Member Code<input id="pedestal-member-code" placeholder="PED-03"></label>
+                            <label>Level<input id="pedestal-level" placeholder="GF"></label>
+                            <label>Type Ref<input id="pedestal-type-ref" placeholder="ตอม่อ 3"></label>
+                            <label>H to Top of Beam<input id="pedestal-h" type="number" step="0.001" value="0"></label>
+                            <label>Footing Offset<input id="pedestal-footing-offset" type="number" step="0.001" value="0.05"></label>
+                            <label>Main Bar Count<input id="pedestal-main-bar-count" type="number" step="1" value="0"></label>
+                            <label>Main Bar Dia<input id="pedestal-main-bar-dia" type="number" step="1" value="0"></label>
+                            <label>Tie Dia<input id="pedestal-tie-dia" type="number" step="1" value="0"></label>
+                            <label>Tie Spacing<input id="pedestal-tie-spacing" type="number" step="0.001" value="0"></label>
+                            <label>Drilled Bar Count<input id="pedestal-drilled-bar-count" type="number" step="1" value="0"></label>
+                            <label>Drill Depth<input id="pedestal-drill-depth" type="number" step="0.001" value="0"></label>
+                            <label>HILTI Count<input id="pedestal-hilti-count" type="number" step="1" value="0"></label>
+                            <label>Basis Status
+                                <select id="pedestal-basis">
+                                    <option value="VERIFIED_DETAIL">VERIFIED_DETAIL</option>
+                                    <option value="ADOPTED_DETAIL" selected>ADOPTED_DETAIL</option>
+                                    <option value="EST_GRID">EST_GRID</option>
+                                    <option value="DENSITY_FALLBACK">DENSITY_FALLBACK</option>
+                                </select>
+                            </label>
+                            <label>Source Ref<input id="pedestal-source" placeholder="S-X1-103/ตอม่อ 3"></label>
+                        </div>
+                        <div class="action-row">
+                            <button id="btn-add-pedestal-member" class="primary-btn">Add Pedestal</button>
+                        </div>
+                    </div>
+
+                    <div class="member-panel" data-member-panel="wall">
+                        <div class="form-grid">
+                            <label>Wall ID/Code<input id="wall-member-code" placeholder="W1"></label>
+                            <label>Level<input id="wall-level" placeholder="1F"></label>
+                            <label>Wall Type<input id="wall-type" placeholder="Brick 10cm"></label>
+                            <label>Height (m)<input id="wall-height" type="number" step="0.001" value="3.0"></label>
+                            <label>Gross Area (m2)<input id="wall-area" type="number" step="0.001" value="0"></label>
+                            <label>Basis Status
+                                <select id="wall-basis">
+                                    <option value="VERIFIED_DETAIL">VERIFIED_DETAIL</option>
+                                    <option value="ADOPTED_DETAIL" selected>ADOPTED_DETAIL</option>
+                                    <option value="EST_GRID">EST_GRID</option>
+                                </select>
+                            </label>
+                            <label class="wide">Source Ref<input id="wall-source" placeholder="A-X1-101/W1"></label>
+                        </div>
+                        <div class="action-row">
+                            <button id="btn-add-wall-member" class="primary-btn">Add Wall</button>
+                        </div>
+                    </div>
+
+                    <div class="member-panel" data-member-panel="opening">
+                        <div class="form-grid">
+                            <label>Opening ID<input id="opening-member-code" placeholder="D1"></label>
+                            <label>Parent Wall ID<input id="opening-parent-wall" placeholder="W1"></label>
+                            <label>Opening Type<input id="opening-type" placeholder="Door Type 1"></label>
+                            <label>Width (m)<input id="opening-width" type="number" step="0.001" value="0.9"></label>
+                            <label>Height (m)<input id="opening-height" type="number" step="0.001" value="2.0"></label>
+                            <label>Area (m2)<input id="opening-area" type="number" step="0.001" value="1.8"></label>
+                            <label>Count<input id="opening-count" type="number" step="1" value="1"></label>
+                            <label>Source Ref<input id="opening-source" placeholder="A-X1-101/D1"></label>
+                        </div>
+                        <div class="action-row">
+                            <button id="btn-add-opening-member" class="primary-btn">Add Opening</button>
+                        </div>
+                    </div>
+
+                    <div class="member-panel" data-member-panel="mep">
+                        <div class="form-grid">
+                            <label>MEP Item Code<input id="mep-member-code" placeholder="EL-P1"></label>
+                            <label>Level<input id="mep-level" placeholder="1F"></label>
+                            <label>Item Type
+                                <select id="mep-type">
+                                    <option value="mep_count">Count Item (e.g. Socket)</option>
+                                    <option value="mep_run">Linear Run (e.g. Pipe)</option>
+                                    <option value="mep_riser">Riser (Vertical Path)</option>
+                                </select>
+                            </label>
+                            <label>Service Type<input id="mep-service" placeholder="Lighting"></label>
+                            <label>Count<input id="mep-count" type="number" step="1" value="1"></label>
+                            <label>Length (m)<input id="mep-length" type="number" step="0.001" value="0"></label>
+                            <label>Source Ref<input id="mep-source" placeholder="E-X1-101/P1"></label>
+                        </div>
+                        <div class="action-row">
+                            <button id="btn-add-mep-member" class="primary-btn">Add MEP Item</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Multi-Discipline Aggregation</h3>
+                    <p class="subtle-copy">Run the aggregator to resolve AR deductions (Wall -> Opening) and sync MEP runs/counts into the calculation.</p>
+                    <div class="action-row">
+                        <button id="btn-run-aggregate" class="primary-btn">Run Multi-Discipline Aggregator</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Add Component</h3>
+                    <div class="form-grid">
+                        <label>Member ID<input id="component-member-id" placeholder="mem_xxxxxxxx"></label>
+                        <label>Source Segment ID<input id="component-source-segment-id" placeholder="seg_xxxxxxxx"></label>
+                        <label>Component Type<input id="component-type" placeholder="DB20"></label>
+                        <label>Spec<input id="component-spec" placeholder="DB20 main bars"></label>
+                        <label>Qty<input id="component-qty" type="number" step="0.001" value="0"></label>
+                        <label>Unit<input id="component-unit" placeholder="kg"></label>
+                        <label>Loss %<input id="component-loss" type="number" step="0.01" value="0.07"></label>
+                        <label>Line Type
+                            <select id="component-line-type">
+                                <option value="ADD">ADD</option>
+                                <option value="ABT">ABT</option>
+                                <option value="CRD">CRD</option>
+                                <option value="DED">DED</option>
+                            </select>
+                        </label>
+                        <label>Rate Context
+                            <select id="component-rate-context">
+                                <option value="new">new</option>
+                                <option value="reuse_recovery">reuse_recovery</option>
+                                <option value="marginal">marginal</option>
+                                <option value="demolition">demolition</option>
+                                <option value="abortive">abortive</option>
+                            </select>
+                        </label>
+                        <label>Basis Status
+                            <select id="component-basis">
+                                <option value="VERIFIED_DETAIL">VERIFIED_DETAIL</option>
+                                <option value="ADOPTED_DETAIL" selected>ADOPTED_DETAIL</option>
+                                <option value="EST_GRID">EST_GRID</option>
+                                <option value="DENSITY_FALLBACK">DENSITY_FALLBACK</option>
+                                <option value="MANUAL_ALLOWANCE">MANUAL_ALLOWANCE</option>
+                                <option value="NEGOTIATED_COMMERCIAL">NEGOTIATED_COMMERCIAL</option>
+                            </select>
+                        </label>
+                        <label>Source Ref<input id="component-source" placeholder="S-X1-313/Section-2"></label>
+                        <label>ABT Override<input id="component-abt-override" type="number" step="0.01" placeholder="40000"></label>
+                        <label class="wide">Formula<input id="component-formula" placeholder="2 bars x 5.95 m x 2.47 kg/m"></label>
+                    </div>
+                    <div class="action-row">
+                        <button id="btn-add-component" class="primary-btn">Add Component</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Add Segment</h3>
+                    <p class="subtle-copy">Use segments for beam zones, slab areas, and pedestal heights. Pedestal owner export stays blocked until H is closed.</p>
+                    <div class="form-grid">
+                        <label>Member ID<input id="segment-member-id" placeholder="mem_xxxxxxxx"></label>
+                        <label>Segment Name<input id="segment-name" placeholder="support zone"></label>
+                        <label>Length<input id="segment-length" type="number" step="0.001" value="0"></label>
+                        <label>Width<input id="segment-width" type="number" step="0.001" value="0"></label>
+                        <label>Depth<input id="segment-depth" type="number" step="0.001" value="0"></label>
+                        <label>Height<input id="segment-height" type="number" step="0.001" value="0"></label>
+                        <label>Area<input id="segment-area" type="number" step="0.001" value="0"></label>
+                        <label>Volume<input id="segment-volume" type="number" step="0.001" value="0"></label>
+                        <label>Basis Status
+                            <select id="segment-basis">
+                                <option value="VERIFIED_DETAIL">VERIFIED_DETAIL</option>
+                                <option value="ADOPTED_DETAIL" selected>ADOPTED_DETAIL</option>
+                                <option value="EST_GRID">EST_GRID</option>
+                                <option value="DENSITY_FALLBACK">DENSITY_FALLBACK</option>
+                            </select>
+                        </label>
+                        <label>Source Ref<input id="segment-source" placeholder="S-X1-307/Section-1"></label>
+                        <label class="wide">Formula<input id="segment-formula" placeholder="0.2 x 0.4 x 5.95"></label>
+                    </div>
+                    <div class="action-row">
+                        <button id="btn-add-segment" class="primary-btn">Add Segment</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Takeoff Snapshot</h3>
+                    <div id="takeoff-list" class="list-box empty">No takeoff rows yet.</div>
+                </div>
+            </section>
+
+            <section class="pane" data-pane="rates">
+                <div class="card split-card">
+                    <div>
+                        <h3>Add Rate</h3>
+                        <div class="form-grid">
+                            <label>Item Code<input id="rate-code" placeholder="RC-DB20"></label>
+                            <label>Description<input id="rate-desc" placeholder="DB20 new install"></label>
+                            <label>Unit<input id="rate-unit" placeholder="kg"></label>
+                            <label>Rate Context
+                                <select id="rate-context">
+                                    <option value="new">new</option>
+                                    <option value="reuse_recovery">reuse_recovery</option>
+                                    <option value="marginal">marginal</option>
+                                    <option value="demolition">demolition</option>
+                                    <option value="abortive">abortive</option>
+                                </select>
+                            </label>
+                            <label>Material Rate<input id="rate-mat" type="number" step="0.01" value="0"></label>
+                            <label>Labor Rate<input id="rate-lab" type="number" step="0.01" value="0"></label>
+                        </div>
+                        <div class="action-row">
+                            <button id="btn-add-rate" class="primary-btn">Add Rate</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Rate Library</h3>
+                        <div id="rates-list" class="list-box empty">No rates yet.</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="pane" data-pane="review">
+                <div class="card">
+                    <h3>Review Queue</h3>
+                    <p class="subtle-copy">Owner export stays blocked on unresolved hard gates. Use this pane to add audit notes, apply deterministic segment overrides, and confirm or reject pending candidates.</p>
+                    <div id="review-list" class="list-box empty">No review flags yet.</div>
+                </div>
+            </section>
+
+            <section class="pane" data-pane="export">
+                <div class="card">
+                    <h3>Acceptance Evaluation</h3>
+                    <div id="acceptance-status" class="list-box empty">Evaluating project readiness...</div>
+                    <div id="acceptance-override-form" class="form-section" style="display:none; margin-top: 1rem; border-top: 1px solid #eee; pt: 1rem;">
+                        <h4>Manual Acceptance Override</h4>
+                        <p class="help-text">Use this to authorize export when automated criteria fail but technical review is complete.</p>
+                        <div class="form-grid">
+                            <label class="wide">Justification
+                                <textarea id="acceptance-justification" placeholder="Explain why this project is acceptable for owner export despite failing criteria."></textarea>
                             </label>
                         </div>
+                        <div class="action-row">
+                            <button id="btn-override-acceptance" class="ghost-btn">Apply Acceptance Override</button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Workflow Steps -->
-                <div class="glass-panel p-5 rounded-2xl border border-white/5 shadow-xl flex-1">
-                    <h2 class="font-outfit text-lg font-semibold text-white mb-4">Pipeline Status</h2>
-                    <div class="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-indigo-500/20 before:to-transparent">
-                        
-                        <!-- Track Intakes -->
-                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active" id="step-1">
-                            <div class="flex items-center justify-center w-5 h-5 rounded-full border-2 border-slate-700 bg-slate-900 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 indicator transition-colors z-10"></div>
-                            <div class="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] px-2">
-                                <h3 class="font-medium text-sm text-slate-300 tracking-wide title transition-colors">1. Intake & Geometry</h3>
-                            </div>
-                        </div>
-                        
-                        <!-- Logic -->
-                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group" id="step-2">
-                            <div class="flex items-center justify-center w-5 h-5 rounded-full border-2 border-slate-700 bg-slate-900 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 indicator transition-colors z-10"></div>
-                            <div class="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] px-2">
-                                <h3 class="font-medium text-sm text-slate-500 tracking-wide title transition-colors">2. Architecture & MEP</h3>
-                            </div>
-                        </div>
-                        
-                        <!-- Review -->
-                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group" id="step-3">
-                            <div class="flex items-center justify-center w-5 h-5 rounded-full border-2 border-slate-700 bg-slate-900 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 indicator transition-colors z-10"></div>
-                            <div class="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] px-2">
-                                <h3 class="font-medium text-sm text-slate-500 tracking-wide title transition-colors">3. Manual Review</h3>
-                            </div>
-                        </div>
-                        
-                        <!-- BOQ Export -->
-                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group" id="step-4">
-                            <div class="flex items-center justify-center w-5 h-5 rounded-full border-2 border-slate-700 bg-slate-900 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 indicator transition-colors z-10"></div>
-                            <div class="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] px-2">
-                                <h3 class="font-medium text-sm text-slate-500 tracking-wide title transition-colors">4. PO-5/PO-6 Export</h3>
-                            </div>
-                        </div>
-
+                <div class="card">
+                    <h3>Export</h3>
+                    <p class="subtle-copy">This currently exports the calc graph into the existing workbook bundle format. Raw/link workbook layering will be expanded in the next step.</p>
+                    <div class="action-row">
+                        <button id="btn-export" class="primary-btn">Export Internal Bundle</button>
+                        <button id="btn-export-owner" class="ghost-btn">Export Owner Bundle</button>
                     </div>
+                    <div id="export-result" class="list-box empty">Nothing exported yet.</div>
                 </div>
+            </section>
 
-            </aside>
-
-            <!-- Main Workspace -->
-            <section class="lg:col-span-8 flex flex-col gap-4 relative">
-
-                <!-- Stage 1: Upload -->
-                <div id="stage-upload" class="stage-view active-stage absolute inset-0 glass-panel border border-white/5 rounded-2xl p-8 flex flex-col items-center justify-center shadow-xl text-center">
-                    
-                    <div id="drop-zone" class="w-full max-w-lg p-10 border-2 border-dashed border-slate-600/50 hover:border-indigo-500 hover:bg-indigo-500/5 rounded-2xl transition-all cursor-pointer group">
-                        <div class="w-20 h-20 mx-auto bg-slate-800/80 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
-                            <svg class="w-10 h-10 text-slate-400 group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                        </div>
-                        <h3 class="text-xl font-semibold mb-2 text-white">Upload Blueprints</h3>
-                        <p class="text-slate-400 text-sm">Drop DWG, DXF, or PDF files here</p>
-                        <p class="text-slate-500 text-xs mt-4">Vector PDFs and CAD preferred for cost-efficiency</p>
-                        <input type="file" id="file-upload" multiple class="hidden" accept=".pdf,.dwg,.dxf">
-                    </div>
-
-                    <div id="upload-list" class="mt-6 w-full max-w-lg hidden space-y-2 text-left">
-                        <!-- List populated via JS -->
-                    </div>
-
-                    <button id="btn-start" class="mt-8 px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition-all opacity-0 pointer-events-none translate-y-4">
-                        Extract & Process
-                    </button>
-                </div>
-
-                <!-- Stage 2: Processing / Console -->
-                <div id="stage-processing" class="stage-view absolute inset-0 glass-panel border border-white/5 rounded-2xl p-6 shadow-xl flex flex-col overflow-hidden">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="font-outfit text-xl font-semibold text-white">Optimization Engine</h2>
-                        <div class="px-2.5 py-1 bg-indigo-500/20 text-indigo-400 rounded-md text-xs font-mono tracking-widest animate-pulse border border-indigo-500/20">RUNNING</div>
-                    </div>
-                    
-                    <div id="console-output" class="flex-1 bg-[#0d1117] rounded-xl border border-slate-800 p-4 font-mono text-sm overflow-y-auto space-y-2 text-slate-400">
-                        <!-- Console lines -->
-                        <div class="text-emerald-400">>> Booting Universal QS Engine...</div>
-                    </div>
-                </div>
-
-                <!-- Stage 3: Review -->
-                <div id="stage-review" class="stage-view absolute inset-0 glass-panel border border-orange-500/30 rounded-2xl p-6 shadow-xl flex flex-col hidden bg-gradient-to-b from-orange-500/5 to-transparent">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="p-2 bg-orange-500/20 rounded-lg">
-                            <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        </div>
-                        <h2 class="font-outfit text-xl font-semibold text-white">Manual Review Required</h2>
-                    </div>
-
-                    <div id="review-items" class="flex-1 overflow-y-auto space-y-3">
-                        <!-- Populated by JS -->
-                    </div>
-
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button id="btn-resolve" class="px-6 py-2.5 bg-orange-500 hover:bg-orange-400 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 transition-colors">
-                            Acknowledge & Continue
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Stage 4: Output -->
-                <div id="stage-output" class="stage-view absolute inset-0 glass-panel border border-emerald-500/30 rounded-2xl p-8 flex flex-col items-center justify-center shadow-xl text-center hidden bg-gradient-to-b from-emerald-500/5 to-transparent">
-                    <div class="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 ring-4 ring-emerald-500/10">
-                        <svg class="w-12 h-12 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                    <h2 class="text-3xl font-outfit font-bold text-white mb-2">BOQ Generated</h2>
-                    <p class="text-slate-400 mb-8 max-w-md">Quantities successfully extracted, mapped to Factor F, and reconciled into standard government formats.</p>
-
-                    <div class="grid grid-cols-2 gap-4 w-full max-w-md">
-                        <button id="btn-download-xlsx" class="flex flex-col items-center justify-center p-6 bg-slate-800/50 hover:bg-emerald-500/10 border border-slate-700 hover:border-emerald-500/50 rounded-xl transition-all group">
-                            <svg class="w-8 h-8 text-emerald-500 mb-2 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            <span class="font-semibold text-white text-sm">Download PO-4/5/6</span>
-                            <span class="text-xs text-slate-500 mt-1">.xlsx format</span>
-                        </button>
-                        <button id="btn-download-json" class="flex flex-col items-center justify-center p-6 bg-slate-800/50 hover:bg-indigo-500/10 border border-slate-700 hover:border-indigo-500/50 rounded-xl transition-all group">
-                            <svg class="w-8 h-8 text-indigo-500 mb-2 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                            <span class="font-semibold text-white text-sm">Download Schema</span>
-                            <span class="text-xs text-slate-500 mt-1">.json format</span>
-                        </button>
-                    </div>
-                    
-                    <button onclick="location.reload()" class="mt-8 text-sm text-slate-400 hover:text-white transition-colors underline underline-offset-4 decoration-slate-600 hover:decoration-white">Start New Project</button>
-                </div>
-
+            <section class="console-card">
+                <h3>Console</h3>
+                <div id="console-output" class="console-output"></div>
             </section>
         </main>
     </div>
