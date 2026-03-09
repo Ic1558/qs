@@ -38,6 +38,7 @@ _INPUT_SCHEMAS: dict[str, dict[str, tuple[str, ...]]] = {
             "estimate_ref",
             "po_ref",
             "report_profile_id",
+            "handoff_output_dir",
         ),
     },
 }

@@ -95,6 +95,30 @@ class ReportGenerateV2Tests(unittest.TestCase):
                 },
             )
             self.assertEqual(result["details"]["report_generate"]["report_profile_id"], "default_qs_v2")
+            self.assertEqual(
+                result["details"]["consistency_check"]["consistency_schema_version"],
+                "qs.consistency_check.v2",
+            )
+            self.assertEqual(
+                result["details"]["release_pack"]["release_pack_schema_version"],
+                "qs.release_pack.v2",
+            )
+            self.assertEqual(result["details"]["release_pack"]["status"], "ready")
+            self.assertEqual(
+                result["details"]["bundle_manifest"]["bundle_manifest_schema_version"],
+                "qs.bundle_manifest.v2",
+            )
+            self.assertEqual(result["details"]["bundle_manifest"]["status"], "ready")
+            self.assertEqual(
+                result["details"]["export_profile"]["export_profile_schema_version"],
+                "qs.export_profile.v2",
+            )
+            self.assertEqual(result["details"]["export_profile"]["status"], "ready")
+            self.assertEqual(
+                result["details"]["handoff_review"]["handoff_review_schema_version"],
+                "qs.handoff_review.v2",
+            )
+            self.assertEqual(result["details"]["handoff_review"]["status"], "ready")
 
     def test_v1_compatibility_minimal_context_still_runs(self) -> None:
         result = run_registered_job(
@@ -103,8 +127,12 @@ class ReportGenerateV2Tests(unittest.TestCase):
         )
         self.assertEqual(result["job_type"], "qs.report_generate")
         self.assertIn("artifact_refs", result)
+        self.assertNotIn("consistency_check", result["details"])
+        self.assertNotIn("release_pack", result["details"])
+        self.assertNotIn("bundle_manifest", result["details"])
+        self.assertNotIn("export_profile", result["details"])
+        self.assertNotIn("handoff_review", result["details"])
 
 
 if __name__ == "__main__":
     unittest.main()
-
