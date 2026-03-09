@@ -1,2 +1,0 @@
-[console_scripts]
-uqs = universal_qs_engine.cli:main
