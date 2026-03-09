@@ -27,8 +27,18 @@ _INPUT_SCHEMAS: dict[str, dict[str, tuple[str, ...]]] = {
         "optional": ("issue_mode",),
     },
     "qs.report_generate": {
-        "required": ("run_manifest_ref",),
-        "optional": ("artifact_bundle_ref", "export_profile"),
+        # Supports both legacy explicit mode (run_manifest_ref...) and v2 composer mode
+        # (boq_ref/estimate_ref/po_ref/report_profile_id). Validation is handled specially.
+        "required": (),
+        "optional": (
+            "run_manifest_ref",
+            "artifact_bundle_ref",
+            "export_profile",
+            "boq_ref",
+            "estimate_ref",
+            "po_ref",
+            "report_profile_id",
+        ),
     },
 }
 
@@ -86,8 +96,24 @@ def normalize_job_context(requested_job_type: str, context: dict[str, Any]) -> d
     for key in inputs:
         if key not in allowed:
             raise QSJobError(f"invalid_context:unexpected_input:{canonical_type}:{key}")
-    for key in schema["required"]:
-        value = str(inputs.get(key) or "").strip()
-        if not value:
-            raise QSJobError(f"invalid_context:missing_input:{canonical_type}:{key}")
+    if canonical_type == "qs.report_generate":
+        # Either legacy explicit mode:
+        #   run_manifest_ref required
+        # Or v2 composer mode:
+        #   boq_ref, estimate_ref, po_ref, report_profile_id required
+        if "run_manifest_ref" in inputs:
+            value = str(inputs.get("run_manifest_ref") or "").strip()
+            if not value:
+                raise QSJobError("invalid_context:missing_input:qs.report_generate:run_manifest_ref")
+        else:
+            required_v2 = ("boq_ref", "estimate_ref", "po_ref", "report_profile_id")
+            for key in required_v2:
+                value = str(inputs.get(key) or "").strip()
+                if not value:
+                    raise QSJobError(f"invalid_context:missing_input:qs.report_generate:{key}")
+    else:
+        for key in schema["required"]:
+            value = str(inputs.get(key) or "").strip()
+            if not value:
+                raise QSJobError(f"invalid_context:missing_input:{canonical_type}:{key}")
     return normalized

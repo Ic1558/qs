@@ -111,6 +111,17 @@ class JobRegistryTests(unittest.TestCase):
                 },
             )
 
+    def test_report_generate_requires_complete_v2_inputs(self) -> None:
+        with self.assertRaises(QSJobError):
+            run_registered_job(
+                "qs.report_generate",
+                {
+                    "run_id": "run_report_invalid",
+                    "project_id": "prj_report_invalid",
+                    "inputs": {"boq_ref": "/tmp/boq.json"},
+                },
+            )
+
     def test_artifact_refs_are_deterministic(self) -> None:
         first = run_registered_job(
             "qs.cost_estimate",
