@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-
-class QSJobError(ValueError):
-    """Raised when a job context is invalid."""
+from ..errors import QSJobError
 
 
 def require_context_value(context: dict[str, Any], key: str) -> str:

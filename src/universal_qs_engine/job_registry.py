@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from .job_context import canonical_job_type, normalize_job_context
+from .job_output import normalize_job_output
 from .jobs import (
     run_boq_extract,
     run_cost_estimate,
@@ -34,5 +36,8 @@ def get_job_handler(job_type: str) -> JobHandler:
 
 
 def run_registered_job(job_type: str, context: dict[str, Any]) -> dict[str, Any]:
+    canonical_type = canonical_job_type(job_type)
     handler = get_job_handler(job_type)
-    return handler(context)
+    normalized_context = normalize_job_context(canonical_type, context)
+    raw_output = handler(normalized_context)
+    return normalize_job_output(canonical_type, raw_output)

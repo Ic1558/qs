@@ -10,6 +10,7 @@ def run(context: dict[str, Any]) -> dict[str, Any]:
     _ = require_context_value(context, "project_id")
     return {
         "job_type": "qs.report_generate",
+        "details": {"output_profile": "report_generate_v2"},
         "artifact_refs": [
             artifact_ref(run_id, "report", "project_qs_report.md", "summary_report"),
         ],
